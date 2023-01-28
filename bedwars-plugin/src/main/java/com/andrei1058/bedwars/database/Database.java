@@ -22,6 +22,8 @@ package com.andrei1058.bedwars.database;
 
 import com.andrei1058.bedwars.shop.quickbuy.QuickBuyElement;
 import com.andrei1058.bedwars.stats.PlayerStats;
+import com.andrei1058.bedwars.top.TopEntry;
+import com.andrei1058.bedwars.top.TopType;
 
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +47,8 @@ public interface Database {
     void saveStats(PlayerStats stats);
 
     PlayerStats fetchStats(UUID uuid);
+    
+    <T> List<TopEntry<T>> fetchTop(TopType<T> type, int size);
 
     /**
      * Set quick buy slot value.

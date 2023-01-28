@@ -89,6 +89,10 @@ public class ConfigPath {
     public static final String GENERAL_CONFIGURATION_SPECTATOR_ITEMS_ENCHANTED = GENERAL_CONFIGURATION_SPECTATOR_ITEMS_PATH + ".%path%.enchanted";
     public static final String GENERAL_CONFIGURATION_SPECTATOR_ITEMS_COMMAND = GENERAL_CONFIGURATION_SPECTATOR_ITEMS_PATH + ".%path%.command";
 
+    public static final String GENERAL_CONFIGURATION_TOP_PATH = "stats-top";
+    public static final String GENERAL_CONFIGURATION_TOP_SIZE = GENERAL_CONFIGURATION_TOP_PATH + ".cache-size";
+    public static final String GENERAL_CONFIGURATION_TOP_TIME = GENERAL_CONFIGURATION_TOP_PATH + ".cache-time";
+
     public static final String GENERAL_CONFIGURATION_STATS_PATH = "stats-gui";
     public static final String GENERAL_CONFIGURATION_STATS_GUI_SIZE = GENERAL_CONFIGURATION_STATS_PATH + ".inv-size";
     public static final String GENERAL_CONFIGURATION_STATS_ITEMS_MATERIAL = GENERAL_CONFIGURATION_STATS_PATH + ".%path%.material";

@@ -29,6 +29,9 @@ import com.andrei1058.bedwars.api.language.Messages;
 import com.andrei1058.bedwars.arena.Arena;
 import com.andrei1058.bedwars.commands.shout.ShoutCommand;
 import com.andrei1058.bedwars.stats.PlayerStats;
+import com.andrei1058.bedwars.top.TopEntry;
+import com.andrei1058.bedwars.top.TopType;
+
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
@@ -36,12 +39,15 @@ import org.jetbrains.annotations.NotNull;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.andrei1058.bedwars.api.language.Language.getMsg;
 
 public class PAPISupport extends PlaceholderExpansion {
 
     private static final SimpleDateFormat elapsedFormat = new SimpleDateFormat("HH:mm");
+    private static final Pattern TOP_PATTERN = Pattern.compile("([a-z_]+)_(player|value)_([1-9]\\d*)");
 
     @NotNull
     @Override
@@ -66,6 +72,7 @@ public class PAPISupport extends PlaceholderExpansion {
         return true;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public String onPlaceholderRequest(Player player, @NotNull String s) {
 
@@ -146,6 +153,36 @@ public class PAPISupport extends PlaceholderExpansion {
                     return String.valueOf(stats.getBedsDestroyed());
                 case "gamesplayed":
                     return String.valueOf(stats.getGamesPlayed());
+            }
+        }
+        
+        // top placeholders
+        if (s.startsWith("top_")) {
+            Matcher match = TOP_PATTERN.matcher(s.substring(4));
+            if (match.matches()) {
+                long pos = Integer.parseInt(match.group(3));
+                TopType<Object> topType = (TopType<Object>) TopType.valueOf(match.group(1)).orElse(null);
+                if (topType != null) {
+                    switch (match.group(2)) {
+                        case "player": {
+                            return BedWars.getTopManager().getTop(topType).stream()
+                                    .skip(pos - 1)
+                                    .findFirst()
+                                    .map(TopEntry::getName)
+                                    .orElse("");
+                            }
+                        case "value": {
+                                return BedWars.getTopManager().getTop(topType).stream()
+                                        .skip(pos - 1)
+                                        .findFirst()
+                                        .map(TopEntry::getValue)
+                                        .map(value -> topType.format(player, value))
+                                        .orElse("");
+                        }
+                        default:
+                            break;
+                    }
+                }
             }
         }
 

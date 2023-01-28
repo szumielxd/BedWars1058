@@ -81,6 +81,7 @@ import com.andrei1058.bedwars.support.preloadedparty.PrePartyListener;
 import com.andrei1058.bedwars.support.vault.*;
 import com.andrei1058.bedwars.support.vipfeatures.VipFeatures;
 import com.andrei1058.bedwars.support.vipfeatures.VipListeners;
+import com.andrei1058.bedwars.top.TopManager;
 import com.andrei1058.vipfeatures.api.IVipFeatures;
 import com.andrei1058.vipfeatures.api.MiniGameAlreadyRegistered;
 import org.bstats.bukkit.Metrics;
@@ -116,6 +117,7 @@ public class BedWars extends JavaPlugin {
     public static MainConfig config;
     public static ShopManager shop;
     public static StatsManager statsManager;
+    public static TopManager topManager;
     public static BedWars plugin;
     public static VersionSupport nms;
 
@@ -365,6 +367,7 @@ public class BedWars extends JavaPlugin {
         loadArenasAndSigns();
 
         statsManager = new StatsManager();
+        topManager = new TopManager();
 
         /* Party support */
         Bukkit.getScheduler().runTaskLater(this, () -> {
@@ -783,6 +786,10 @@ public class BedWars extends JavaPlugin {
 
     public static StatsManager getStatsManager() {
         return statsManager;
+    }
+
+    public static TopManager getTopManager() {
+        return topManager;
     }
 
     public static com.andrei1058.bedwars.api.BedWars getAPI() {

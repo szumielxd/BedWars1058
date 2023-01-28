@@ -24,15 +24,21 @@ import com.andrei1058.bedwars.BedWars;
 import com.andrei1058.bedwars.api.language.Language;
 import com.andrei1058.bedwars.shop.quickbuy.QuickBuyElement;
 import com.andrei1058.bedwars.stats.PlayerStats;
+import com.andrei1058.bedwars.top.TopEntry;
+import com.andrei1058.bedwars.top.TopType;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.andrei1058.bedwars.BedWars.config;
 
@@ -237,6 +243,54 @@ public class MySQL implements Database {
             e.printStackTrace();
         }
         return stats;
+    }
+    
+    @Override
+    public <T> List<TopEntry<T>> fetchTop(TopType<T> type, int size) {
+        List<TopEntry<T>> top = new ArrayList<>();
+        if (TopType.LEVEL.equals(type)) {
+            // connect to level table
+            String sql = "SELECT `levels`.`uuid`, `stats`.`name`, REPLACE(`levels`.`name`, '{number}', `level`) "
+                    + "FROM `player_levels` as `levels` INNER JOIN `global_stats` as `stats` ON `levels`.`uuid` = `stats`.`uuid` "
+                    + "ORDER BY `level`  DESC, `xp` DESC LIMIT ?";
+            try (Connection connection = dataSource.getConnection()) {
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    statement.setInt(1, size);
+                    try (ResultSet result = statement.executeQuery()) {
+                        while (result.next()) {
+                            UUID uuid = UUID.fromString(result.getString(1));
+                            String name = result.getString(2);
+                            T value = result.getObject(3, type.getValueClass());
+                            top.add(new TopEntry<>(uuid, name, value));
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } else {
+            // connect to stats table
+            String field = Stream.of(type.getInternalNames())
+                    .map(name -> "`" + name + "`")
+                    .collect(Collectors.joining(" + "));
+            String sql = String.format("SELECT `uuid`, `name`, %s as `val` FROM global_stats ORDER BY `val` DESC LIMIT ?;", field);
+            try (Connection connection = dataSource.getConnection()) {
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    statement.setInt(1, size);
+                    try (ResultSet result = statement.executeQuery()) {
+                        while (result.next()) {
+                            UUID uuid = UUID.fromString(result.getString(1));
+                            String name = result.getString(2);
+                            T value = result.getObject(3, type.getValueClass());
+                            top.add(new TopEntry<>(uuid, name, value));
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+        return Collections.unmodifiableList(top);
     }
 
     @Override
