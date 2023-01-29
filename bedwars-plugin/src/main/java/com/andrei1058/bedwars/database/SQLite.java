@@ -206,51 +206,35 @@ public class SQLite implements Database {
     @Override
     public <T> List<TopEntry<T>> fetchTop(TopType<T> type, int size) {
         List<TopEntry<T>> top = new ArrayList<>();
+        String sql;
         if (TopType.LEVEL.equals(type)) {
             // connect to level table
-            try {
-                String sql = "SELECT `levels`.`uuid`, `stats`.`name`, REPLACE(`levels`.`name`, '{number}', `level`) "
-                        + "FROM `player_levels` as `levels` INNER JOIN `global_stats` as `stats` ON `levels`.`uuid` = `stats`.`uuid` "
-                        + "ORDER BY `level`  DESC, `xp` DESC LIMIT ?";
-                checkConnection();
-                try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                    statement.setInt(1, size);
-                    try (ResultSet result = statement.executeQuery()) {
-                        while (result.next()) {
-                            UUID uuid = UUID.fromString(result.getString(1));
-                            String name = result.getString(2);
-                            T value = result.getObject(3, type.getValueClass());
-                            top.add(new TopEntry<>(uuid, name, value));
-                        }
-                    }
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+            sql = "SELECT `levels`.`uuid`, `stats`.`name`, REPLACE(`levels`.`name`, '{number}', `level`) "
+                    + "FROM `player_levels` as `levels` INNER JOIN `global_stats` as `stats` ON `levels`.`uuid` = `stats`.`uuid` "
+                    + "ORDER BY `level`  DESC, `xp` DESC LIMIT ?";
         } else {
             // connect to stats table
             String field = Stream.of(type.getInternalNames())
                     .map(name -> "`" + name + "`")
                     .collect(Collectors.joining(" + "));
-            String sql = String.format("SELECT `uuid`, `name`, %s as `val` FROM global_stats ORDER BY `val` DESC LIMIT ?;", field);
-            try {
-                checkConnection();
-                try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                    statement.setInt(1, size);
-                    try (ResultSet result = statement.executeQuery()) {
-                        while (result.next()) {
-                            UUID uuid = UUID.fromString(result.getString(1));
-                            String name = result.getString(2);
-                            T value = result.getObject(3, type.getValueClass());
-                            top.add(new TopEntry<>(uuid, name, value));
-                        }
+            sql = String.format("SELECT `uuid`, `name`, %s as `val` FROM global_stats ORDER BY `val` DESC LIMIT ?;", field);
+        }
+        try {
+            checkConnection();
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setInt(1, size);
+                try (ResultSet result = statement.executeQuery()) {
+                    while (result.next()) {
+                        UUID uuid = UUID.fromString(result.getString(1));
+                        String name = result.getString(2);
+                        T value = getObjectFromResult(result, 3, type.getValueClass());
+                        top.add(new TopEntry<>(uuid, name, value));
                     }
                 }
-            } catch (SQLException e) {
-                e.printStackTrace();
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-        
         return Collections.unmodifiableList(top);
     }
 
@@ -538,6 +522,15 @@ public class SQLite implements Database {
 
         if (renew)
             this.connection = DriverManager.getConnection(url);
+    }
+    
+    @SuppressWarnings("unchecked")
+    private <T> T getObjectFromResult(ResultSet result, int index, Class<T> type) throws SQLException {
+        if (type.equals(String.class)) return (T) result.getString(index);
+        if (type.equals(Integer.class)) return (T) Integer.valueOf(result.getInt(index));
+        if (type.equals(Long.class)) return (T) Long.valueOf(result.getLong(index));
+        if (type.equals(Timestamp.class)) return (T) result.getTimestamp(index);
+        throw new UnsupportedOperationException(String.format("Canot find suitable database type for `%s`", type));
     }
 
 }
